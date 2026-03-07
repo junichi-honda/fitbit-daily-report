@@ -58,7 +58,30 @@ curl -X POST https://api.fitbit.com/oauth2/token \
 
 レスポンスの `refresh_token` を控える。
 
-### 3. GitHub 設定
+### 3. 各種 API キーの取得
+
+#### ANTHROPIC_API_KEY（Claude API キー）
+
+1. [console.anthropic.com](https://console.anthropic.com/) にログイン
+2. Settings > API Keys を開く
+3. 「Create Key」でキーを生成しコピー
+
+#### SLACK_WEBHOOK_URL（Slack Incoming Webhook URL）
+
+1. [api.slack.com/apps](https://api.slack.com/apps) にアクセス
+2. 対象のアプリを選択（または「Create New App」で新規作成）
+3. 左メニュー「Incoming Webhooks」を開き、有効化
+4. 「Add New Webhook to Workspace」で投稿先チャンネルを選択
+5. 生成された `https://hooks.slack.com/services/...` の URL をコピー
+
+#### GH_PAT（GitHub Personal Access Token）
+
+1. GitHub にログインし、Settings > Developer settings > [Personal access tokens > Tokens (classic)](https://github.com/settings/tokens) を開く
+2. 「Generate new token (classic)」をクリック
+3. スコープは **`repo`** にチェック（Secret の読み書きに必要）
+4. 生成されたトークンをコピー
+
+### 4. GitHub 設定
 
 **Secrets** (Settings > Secrets and variables > Actions > Repository secrets):
 
@@ -68,7 +91,7 @@ curl -X POST https://api.fitbit.com/oauth2/token \
 | `FITBIT_REFRESH_TOKEN` | 取得した refresh_token |
 | `ANTHROPIC_API_KEY` | Claude API キー |
 | `SLACK_WEBHOOK_URL` | Slack Incoming Webhook URL |
-| `GH_PAT` | GitHub Personal Access Token (repo scope) |
+| `GH_PAT` | GitHub Personal Access Token |
 
 **Variables** (Settings > Secrets and variables > Actions > Variables):
 
@@ -76,7 +99,7 @@ curl -X POST https://api.fitbit.com/oauth2/token \
 |---|---|
 | `FITBIT_CLIENT_ID` | Fitbit Client ID |
 
-### 4. 動作確認
+### 5. 動作確認
 
 Actions タブから「Daily Health Report」を手動実行（Run workflow）して Slack への投稿を確認。
 
