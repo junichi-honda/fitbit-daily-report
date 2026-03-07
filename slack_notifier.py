@@ -100,3 +100,98 @@ def post_health_report(health_data, ai_comment):
     res = requests.post(webhook_url, json={"blocks": blocks})
     res.raise_for_status()
     print("✅ Slack投稿完了")
+
+
+def post_weekly_report(weekly_data, ai_comment):
+    webhook_url = os.environ["SLACK_WEBHOOK_URL"]
+    sleep = weekly_data["sleep"]
+    steps = weekly_data["steps"]
+    heart = weekly_data["heart"]
+
+    end = date.today() - timedelta(days=1)
+    start = end - timedelta(days=6)
+    period = f"{start.strftime('%m/%d')}〜{end.strftime('%m/%d')}"
+
+    avg_h = sleep["avg_minutes"] // 60
+    avg_m = sleep["avg_minutes"] % 60
+
+    sleep_daily_text = " ｜ ".join(
+        f"{d['day']} {d['total_minutes'] // 60}h{d['total_minutes'] % 60:02d}m"
+        for d in sleep["daily"]
+    )
+
+    steps_daily_text = " ｜ ".join(
+        f"{d['day']} {d['steps']:,}" for d in steps["daily"]
+    )
+
+    advice_text = "\n".join(f"• {a}" for a in ai_comment.get("advice", []))
+
+    blocks = [
+        {
+            "type": "header",
+            "text": {
+                "type": "plain_text",
+                "text": f"📊 Weekly Health Summary — {period}",
+            },
+        },
+        {"type": "divider"},
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": (
+                    f"*😴 睡眠（7日間平均）*\n"
+                    f"睡眠時間: *{avg_h}時間{avg_m}分* ｜ 効率: *{sleep['avg_efficiency']}%*\n\n"
+                    f"{sleep_daily_text}"
+                ),
+            },
+        },
+        {"type": "divider"},
+        {
+            "type": "section",
+            "fields": [
+                {
+                    "type": "mrkdwn",
+                    "text": (
+                        f"*🚶 アクティビティ（7日間）*\n"
+                        f"平均歩数: *{steps['avg_steps']:,}歩/日*\n"
+                        f"合計歩数: *{steps['total_steps']:,}歩*\n"
+                        f"平均カロリー: *{steps['avg_calories']:,}kcal/日*"
+                    ),
+                },
+                {
+                    "type": "mrkdwn",
+                    "text": (
+                        f"*❤️ 心拍（7日間平均）*\n"
+                        f"安静時心拍: *{heart['avg_resting_heart_rate']}bpm*\n"
+                        f"HRV (RMSSD): *{heart['avg_hrv']}ms*"
+                    ),
+                },
+            ],
+        },
+        {"type": "divider"},
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": (
+                    f"*🤖 週間レビュー*\n"
+                    f"{ai_comment.get('review', '')}\n\n"
+                    f"*💡 来週のアドバイス*\n{advice_text}"
+                ),
+            },
+        },
+        {
+            "type": "context",
+            "elements": [
+                {
+                    "type": "mrkdwn",
+                    "text": "Powered by Fitbit API × Claude API × GitHub Actions",
+                }
+            ],
+        },
+    ]
+
+    res = requests.post(webhook_url, json={"blocks": blocks})
+    res.raise_for_status()
+    print("✅ 週次レポート投稿完了")
