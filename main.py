@@ -40,12 +40,16 @@ def main():
     try:
         new_token = client.refresh_access_token()
     except Exception as e:
+        print(f"トークンリフレッシュ失敗: {e}", file=sys.stderr)
+        traceback.print_exc()
         notify_error(f"トークンリフレッシュ失敗: {e}")
         sys.exit(1)
 
     try:
         update_github_secret(new_token)
     except Exception as e:
+        print(f"Secret更新失敗: {e}", file=sys.stderr)
+        traceback.print_exc()
         notify_error(f"Secret更新失敗: {e}")
         sys.exit(1)
 
@@ -56,18 +60,23 @@ def main():
             "heart": client.get_heart_rate(),
         }
     except Exception as e:
+        print(f"データ取得失敗: {e}", file=sys.stderr)
+        traceback.print_exc()
         notify_error(f"データ取得失敗: {e}")
         sys.exit(1)
 
     try:
         ai_comment = generate_health_comment(health_data)
     except Exception as e:
-        print(f":warning: Claude APIエラー: {e}")
+        print(f"Claude APIエラー: {e}", file=sys.stderr)
+        traceback.print_exc()
         ai_comment = {"condition": "AIコメント生成失敗", "actions": ["水分補給を忘れずに"]}
 
     try:
         post_health_report(health_data, ai_comment)
     except Exception as e:
+        print(f"Slack投稿失敗: {e}", file=sys.stderr)
+        traceback.print_exc()
         notify_error(f"Slack投稿失敗: {e}")
         sys.exit(1)
 
