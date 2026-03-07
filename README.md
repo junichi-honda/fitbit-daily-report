@@ -147,3 +147,7 @@ Powered by Fitbit API × Claude API × GitHub Actions
 - **Claude API** (claude-sonnet-4-5) — AI 分析コメント
 - **Slack Incoming Webhooks** — Block Kit レポート投稿
 - **GitHub Actions** — 定時実行 & トークン自動管理
+
+## ライセンス
+
+[MIT License](LICENSE)
