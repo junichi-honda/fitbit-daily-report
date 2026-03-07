@@ -2,7 +2,7 @@ name: Daily Health Report
 
 on:
   schedule:
-    - cron: "0 23 * * *" # UTC 23:00 = JST 08:00
+    - cron: "0 1 * * *" # UTC 01:00 = JST 10:00
   workflow_dispatch: # 手動実行用
 
 jobs:
