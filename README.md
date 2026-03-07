@@ -80,6 +80,40 @@ curl -X POST https://api.fitbit.com/oauth2/token \
 
 Actions タブから「Daily Health Report」を手動実行（Run workflow）して Slack への投稿を確認。
 
+## 投稿サンプル
+
+```
+🏃 Daily Health Report — XXXX/XX/XX
+
+😴 睡眠
+睡眠時間: X時間XX分 ｜ 効率: XX%
+深い睡眠: XX分 ██░░░░░░░░
+REM睡眠: XX分 █░░░░░░░░░
+浅い睡眠: XXX分 ██████░░░░
+覚醒: XX分 ██░░░░░░░░
+
+🚶 アクティビティ
+歩数: X,XXX歩
+███░░░░░░░ (XX%)
+消費カロリー: X,XXXkcal
+
+❤️ 心拍
+安静時心拍: XXbpm
+HRV (RMSSD): XX.Xms
+
+🤖 AIコーチからのコメント
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+💡 今日のアクション
+• XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+• XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+• XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+Powered by Fitbit API × Claude API × GitHub Actions
+```
+
 ## コスト
 
 ほぼ無料（Claude API 約 ¥27/月のみ）
