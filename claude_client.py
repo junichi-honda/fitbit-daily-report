@@ -1,4 +1,17 @@
-import os, json, requests
+import os, json, re, requests
+
+
+def _extract_json(text):
+    """レスポンスからJSON部分を抽出する"""
+    # ```json ... ``` ブロックがあればその中身を取得
+    m = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.DOTALL)
+    if m:
+        return json.loads(m.group(1))
+    # { ... } を直接探す
+    m = re.search(r"\{.*\}", text, re.DOTALL)
+    if m:
+        return json.loads(m.group(0))
+    raise ValueError(f"JSONが見つかりません: {text[:200]}")
 
 
 def generate_health_comment(health_data):
@@ -7,7 +20,7 @@ def generate_health_comment(health_data):
         health_data["steps"],
         health_data["heart"],
     )
-    prompt = f"""以下のFitbitデータを分析し、JSON形式のみで返してください。
+    prompt = f"""以下のFitbitデータを分析し、JSON形式のみで返してください。余計な説明は不要です。
 睡眠効率:{sleep['score']}% 睡眠時間:{sleep['total_minutes']}分
 深睡眠:{sleep['deep_minutes']}分 REM:{sleep['rem_minutes']}分
 歩数:{steps['steps']}歩 消費:{steps['calories']}kcal
@@ -25,9 +38,10 @@ def generate_health_comment(health_data):
         json={
             "model": "claude-sonnet-4-5",
             "max_tokens": 512,
-            "system": "健康データを分析するパーソナルコーチです。日本語で回答します。",
+            "system": "健康データを分析するパーソナルコーチです。日本語で回答します。JSONのみ返してください。",
             "messages": [{"role": "user", "content": prompt}],
         },
     )
     res.raise_for_status()
-    return json.loads(res.json()["content"][0]["text"].strip())
+    text = res.json()["content"][0]["text"].strip()
+    return _extract_json(text)
