@@ -1,0 +1,32 @@
+name: Daily Health Report
+
+on:
+  schedule:
+    - cron: "0 23 * * *" # UTC 23:00 = JST 08:00
+  workflow_dispatch: # 手動実行用
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run daily report
+        env:
+          FITBIT_CLIENT_ID: ${{ vars.FITBIT_CLIENT_ID }}
+          FITBIT_CLIENT_SECRET: ${{ secrets.FITBIT_CLIENT_SECRET }}
+          FITBIT_REFRESH_TOKEN: ${{ secrets.FITBIT_REFRESH_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          GH_PAT: ${{ secrets.GH_PAT }}
+          GH_REPO_OWNER: ${{ github.repository_owner }}
+          GH_REPO_NAME: ${{ github.event.repository.name }}
+        run: python main.py
