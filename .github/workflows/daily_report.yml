@@ -27,7 +27,7 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-          SLACK_USER_EMAIL: ${{ secrets.SLACK_USER_EMAIL }}
+          SLACK_USER_EMAIL: ${{ vars.SLACK_USER_EMAIL }}
           GH_PAT: ${{ secrets.GH_PAT }}
           GH_REPO_OWNER: ${{ github.repository_owner }}
           GH_REPO_NAME: ${{ github.event.repository.name }}
