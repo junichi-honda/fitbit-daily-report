@@ -1,5 +1,6 @@
 import os, base64, requests
 from nacl import encoding, public
+from config import GITHUB_API_BASE_URL, GITHUB_API_VERSION, FITBIT_REFRESH_TOKEN_SECRET_NAME
 
 
 def encrypt_secret(public_key_str, secret_value):
@@ -15,14 +16,14 @@ def update_github_secret(new_refresh_token):
     headers = {
         "Authorization": f"Bearer {os.environ['GH_PAT']}",
         "Accept": "application/vnd.github+json",
-        "X-GitHub-Api-Version": "2022-11-28",
+        "X-GitHub-Api-Version": GITHUB_API_VERSION,
     }
     key_data = requests.get(
-        f"https://api.github.com/repos/{owner}/{repo}/actions/secrets/public-key",
+        f"{GITHUB_API_BASE_URL}/repos/{owner}/{repo}/actions/secrets/public-key",
         headers=headers,
     ).json()
     requests.put(
-        f"https://api.github.com/repos/{owner}/{repo}/actions/secrets/FITBIT_REFRESH_TOKEN",
+        f"{GITHUB_API_BASE_URL}/repos/{owner}/{repo}/actions/secrets/{FITBIT_REFRESH_TOKEN_SECRET_NAME}",
         headers=headers,
         json={
             "encrypted_value": encrypt_secret(key_data["key"], new_refresh_token),
