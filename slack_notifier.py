@@ -3,19 +3,7 @@ from datetime import date, timedelta
 
 
 def _get_slack_user_id() -> str:
-    token = os.environ.get("SLACK_BOT_TOKEN")
-    email = os.environ.get("SLACK_USER_EMAIL")
-    if not token or not email:
-        return ""
-    res = requests.get(
-        "https://slack.com/api/users.lookupByEmail",
-        headers={"Authorization": f"Bearer {token}"},
-        params={"email": email},
-    )
-    data = res.json()
-    if data.get("ok"):
-        return data["user"]["id"]
-    return ""
+    return os.environ.get("SLACK_USER_ID", "")
 
 
 def _format_sleep_bar(minutes, total_minutes):
