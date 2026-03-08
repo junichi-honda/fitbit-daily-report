@@ -2,6 +2,10 @@ import os, requests
 from datetime import date, timedelta
 
 
+def _get_slack_user_id() -> str:
+    return os.environ.get("SLACK_USER_ID", "")
+
+
 def _format_sleep_bar(minutes, total_minutes):
     if total_minutes == 0:
         return ""
@@ -22,6 +26,8 @@ def post_health_report(health_data, ai_comment):
     steps = health_data["steps"]
     heart = health_data["heart"]
     yesterday = (date.today() - timedelta(days=1)).strftime("%Y/%m/%d")
+    user_id = _get_slack_user_id()
+    mention = f"<@{user_id}> " if user_id else ""
 
     total_h = sleep["total_minutes"] // 60
     total_m = sleep["total_minutes"] % 60
@@ -91,7 +97,7 @@ def post_health_report(health_data, ai_comment):
             "elements": [
                 {
                     "type": "mrkdwn",
-                    "text": "Powered by Fitbit API × Claude API × GitHub Actions",
+                    "text": f"{mention}Powered by Fitbit API × Claude API × GitHub Actions",
                 }
             ],
         },
@@ -107,6 +113,8 @@ def post_weekly_report(weekly_data, ai_comment):
     sleep = weekly_data["sleep"]
     steps = weekly_data["steps"]
     heart = weekly_data["heart"]
+    user_id = _get_slack_user_id()
+    mention = f"<@{user_id}> " if user_id else ""
 
     end = date.today() - timedelta(days=1)
     start = end - timedelta(days=6)
@@ -186,7 +194,7 @@ def post_weekly_report(weekly_data, ai_comment):
             "elements": [
                 {
                     "type": "mrkdwn",
-                    "text": "Powered by Fitbit API × Claude API × GitHub Actions",
+                    "text": f"{mention}Powered by Fitbit API × Claude API × GitHub Actions",
                 }
             ],
         },
