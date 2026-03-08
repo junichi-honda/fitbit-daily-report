@@ -5,23 +5,17 @@ from datetime import date, timedelta
 def _get_slack_user_id() -> str:
     token = os.environ.get("SLACK_BOT_TOKEN")
     email = os.environ.get("SLACK_USER_EMAIL")
-    if not token:
+    if not token or not email:
         return ""
-    if email:
-        res = requests.get(
-            "https://slack.com/api/users.lookupByEmail",
-            headers={"Authorization": f"Bearer {token}"},
-            params={"email": email},
-        )
-        data = res.json()
-        if data.get("ok"):
-            return data["user"]["id"]
-    # メールなしの場合はauth.testでBotのUser IDを取得
-    res = requests.post(
-        "https://slack.com/api/auth.test",
+    res = requests.get(
+        "https://slack.com/api/users.lookupByEmail",
         headers={"Authorization": f"Bearer {token}"},
+        params={"email": email},
     )
-    return res.json().get("user_id", "")
+    data = res.json()
+    if data.get("ok"):
+        return data["user"]["id"]
+    return ""
 
 
 def _format_sleep_bar(minutes, total_minutes):
