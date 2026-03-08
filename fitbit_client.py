@@ -34,7 +34,7 @@ class FitbitClient:
 
     def get_sleep(self):
         res = requests.get(
-            f"{self.BASE_URL}/sleep/date/{self._yesterday()}.json",
+            f"https://api.fitbit.com/1.2/user/-/sleep/date/{self._yesterday()}.json",
             headers=self._headers(),
         )
         res.raise_for_status()
@@ -101,7 +101,7 @@ class FitbitClient:
     def get_weekly_sleep(self):
         start, end = self._week_range()
         res = requests.get(
-            f"{self.BASE_URL}/sleep/date/{start}/{end}.json",
+            f"https://api.fitbit.com/1.2/user/-/sleep/date/{start}/{end}.json",
             headers=self._headers(),
         )
         res.raise_for_status()
