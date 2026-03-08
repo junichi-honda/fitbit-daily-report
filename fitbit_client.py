@@ -1,12 +1,16 @@
 import requests
 from datetime import date, timedelta
-
-WEEKDAY_LABELS = ["月", "火", "水", "木", "金", "土", "日"]
+from config import (
+    FITBIT_AUTH_URL,
+    FITBIT_API_BASE_URL,
+    FITBIT_SLEEP_API_BASE_URL,
+    WEEKDAY_LABELS,
+)
 
 
 class FitbitClient:
-    BASE_URL = "https://api.fitbit.com/1/user/-"
-    AUTH_URL = "https://api.fitbit.com/oauth2/token"
+    BASE_URL = FITBIT_API_BASE_URL
+    AUTH_URL = FITBIT_AUTH_URL
 
     def __init__(self, client_id, client_secret, refresh_token):
         self.client_id = client_id
@@ -34,7 +38,7 @@ class FitbitClient:
 
     def get_sleep(self):
         res = requests.get(
-            f"https://api.fitbit.com/1.2/user/-/sleep/date/{self._yesterday()}.json",
+            f"{FITBIT_SLEEP_API_BASE_URL}/sleep/date/{self._yesterday()}.json",
             headers=self._headers(),
         )
         res.raise_for_status()
@@ -101,7 +105,7 @@ class FitbitClient:
     def get_weekly_sleep(self):
         start, end = self._week_range()
         res = requests.get(
-            f"https://api.fitbit.com/1.2/user/-/sleep/date/{start}/{end}.json",
+            f"{FITBIT_SLEEP_API_BASE_URL}/sleep/date/{start}/{end}.json",
             headers=self._headers(),
         )
         res.raise_for_status()

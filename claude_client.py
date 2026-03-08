@@ -1,4 +1,5 @@
 import os, json, re, requests
+from config import ANTHROPIC_API_URL, ANTHROPIC_API_VERSION, CLAUDE_MODEL, CLAUDE_MAX_TOKENS
 
 
 def _extract_json(text):
@@ -29,15 +30,15 @@ def generate_health_comment(health_data):
 {{"condition": "今日の体の状態を2〜3文で", "actions": ["提案1", "提案2", "提案3"]}}"""
 
     res = requests.post(
-        "https://api.anthropic.com/v1/messages",
+        ANTHROPIC_API_URL,
         headers={
             "x-api-key": os.environ["ANTHROPIC_API_KEY"],
-            "anthropic-version": "2023-06-01",
+            "anthropic-version": ANTHROPIC_API_VERSION,
             "content-type": "application/json",
         },
         json={
-            "model": "claude-sonnet-4-5",
-            "max_tokens": 512,
+            "model": CLAUDE_MODEL,
+            "max_tokens": CLAUDE_MAX_TOKENS,
             "system": "健康データを分析するパーソナルコーチです。日本語で回答します。JSONのみ返してください。",
             "messages": [{"role": "user", "content": prompt}],
         },
@@ -68,15 +69,15 @@ def generate_weekly_comment(weekly_data):
 {{"review": "1週間の振り返りを3〜4文で", "advice": ["来週のアドバイス1", "来週のアドバイス2", "来週のアドバイス3"]}}"""
 
     res = requests.post(
-        "https://api.anthropic.com/v1/messages",
+        ANTHROPIC_API_URL,
         headers={
             "x-api-key": os.environ["ANTHROPIC_API_KEY"],
-            "anthropic-version": "2023-06-01",
+            "anthropic-version": ANTHROPIC_API_VERSION,
             "content-type": "application/json",
         },
         json={
-            "model": "claude-sonnet-4-5",
-            "max_tokens": 512,
+            "model": CLAUDE_MODEL,
+            "max_tokens": CLAUDE_MAX_TOKENS,
             "system": "健康データを分析するパーソナルコーチです。日本語で回答します。JSONのみ返してください。",
             "messages": [{"role": "user", "content": prompt}],
         },

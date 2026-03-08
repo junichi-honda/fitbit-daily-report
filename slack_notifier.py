@@ -1,5 +1,6 @@
 import os, requests
 from datetime import date, timedelta
+from config import DAILY_STEP_GOAL
 
 
 def _get_slack_user_id() -> str:
@@ -14,7 +15,7 @@ def _format_sleep_bar(minutes, total_minutes):
     return "█" * filled + "░" * (10 - filled)
 
 
-def _format_steps_bar(steps, goal=10000):
+def _format_steps_bar(steps, goal=DAILY_STEP_GOAL):
     ratio = min(steps / goal, 1.0)
     filled = round(ratio * 10)
     return "█" * filled + "░" * (10 - filled)
@@ -66,7 +67,7 @@ def post_health_report(health_data, ai_comment):
                     "text": (
                         f"*🚶 アクティビティ*\n"
                         f"歩数: *{steps['steps']:,}歩*\n"
-                        f"{_format_steps_bar(steps['steps'])} ({min(steps['steps'] * 100 // 10000, 100)}%)\n"
+                        f"{_format_steps_bar(steps['steps'])} ({min(steps['steps'] * 100 // DAILY_STEP_GOAL, 100)}%)\n"
                         f"消費カロリー: *{steps['calories']:,}kcal*"
                     ),
                 },
