@@ -4,6 +4,7 @@ from fitbit_client import FitbitClient
 from token_manager import update_github_secret
 from claude_client import generate_health_comment, generate_weekly_comment
 from slack_notifier import post_health_report, post_weekly_report
+from user_settings import load_settings, is_remote_today
 
 
 def notify_error(message):
@@ -66,8 +67,16 @@ def main():
         notify_error(f"データ取得失敗: {e}")
         sys.exit(1)
 
+    # ユーザー設定を読み込み
+    user_settings = load_settings()
+    work_style_context = {
+        "work_style": user_settings.get("work_style", "office"),
+        "remote_days": user_settings.get("remote_days", []),
+        "is_remote": is_remote_today(user_settings),
+    }
+
     try:
-        ai_comment = generate_health_comment(health_data)
+        ai_comment = generate_health_comment(health_data, work_style_context)
     except Exception as e:
         print(f"Claude APIエラー: {e}", file=sys.stderr)
         traceback.print_exc()
@@ -97,7 +106,7 @@ def main():
             sys.exit(1)
 
         try:
-            weekly_comment = generate_weekly_comment(weekly_data)
+            weekly_comment = generate_weekly_comment(weekly_data, work_style_context)
         except Exception as e:
             print(f"週次Claude APIエラー: {e}", file=sys.stderr)
             traceback.print_exc()
