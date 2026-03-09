@@ -1,9 +1,19 @@
-import os, sys, traceback, requests
+import os, sys, traceback, requests, argparse
 from datetime import date
 from fitbit_client import FitbitClient
 from token_manager import update_github_secret
-from claude_client import generate_health_comment, generate_weekly_comment
-from slack_notifier import post_health_report, post_weekly_report
+from claude_client import (
+    generate_health_comment,
+    generate_weekly_comment,
+    generate_sleep_comment,
+    generate_activity_comment,
+)
+from slack_notifier import (
+    post_health_report,
+    post_weekly_report,
+    post_morning_report,
+    post_evening_report,
+)
 
 
 def notify_error(message):
@@ -16,65 +26,54 @@ def notify_error(message):
         pass
 
 
-def main():
-    required = [
-        "FITBIT_CLIENT_ID",
-        "FITBIT_CLIENT_SECRET",
-        "FITBIT_REFRESH_TOKEN",
-        "ANTHROPIC_API_KEY",
-        "SLACK_WEBHOOK_URL",
-        "GH_PAT",
-        "GH_REPO_OWNER",
-        "GH_REPO_NAME",
-    ]
-    missing = [k for k in required if not os.environ.get(k)]
-    if missing:
-        print(f":x: 環境変数不足: {missing}")
-        sys.exit(1)
-
-    client = FitbitClient(
-        os.environ["FITBIT_CLIENT_ID"],
-        os.environ["FITBIT_CLIENT_SECRET"],
-        os.environ["FITBIT_REFRESH_TOKEN"],
-    )
-
+def run_morning_report(client):
+    """朝のレポート: 当日の睡眠データを配信"""
+    print("🌅 朝のレポートを生成します（当日の睡眠データ）")
     try:
-        new_token = client.refresh_access_token()
+        sleep_data = client.get_sleep()
     except Exception as e:
-        print(f"トークンリフレッシュ失敗: {e}", file=sys.stderr)
+        print(f"睡眠データ取得失敗: {e}", file=sys.stderr)
         traceback.print_exc()
-        notify_error(f"トークンリフレッシュ失敗: {e}")
+        notify_error(f"睡眠データ取得失敗: {e}")
         sys.exit(1)
 
     try:
-        update_github_secret(new_token)
-    except Exception as e:
-        print(f"Secret更新失敗: {e}", file=sys.stderr)
-        traceback.print_exc()
-        notify_error(f"Secret更新失敗: {e}")
-        sys.exit(1)
-
-    try:
-        health_data = {
-            "sleep": client.get_sleep(),
-            "steps": client.get_steps(),
-            "heart": client.get_heart_rate(),
-        }
-    except Exception as e:
-        print(f"データ取得失敗: {e}", file=sys.stderr)
-        traceback.print_exc()
-        notify_error(f"データ取得失敗: {e}")
-        sys.exit(1)
-
-    try:
-        ai_comment = generate_health_comment(health_data)
+        ai_comment = generate_sleep_comment(sleep_data)
     except Exception as e:
         print(f"Claude APIエラー: {e}", file=sys.stderr)
         traceback.print_exc()
-        ai_comment = {"condition": "AIコメント生成失敗", "actions": ["水分補給を忘れずに"]}
+        ai_comment = {"condition": "AIコメント生成失敗", "actions": ["良い一日を！"]}
 
     try:
-        post_health_report(health_data, ai_comment)
+        post_morning_report(sleep_data, ai_comment)
+    except Exception as e:
+        print(f"Slack投稿失敗: {e}", file=sys.stderr)
+        traceback.print_exc()
+        notify_error(f"Slack投稿失敗: {e}")
+        sys.exit(1)
+
+
+def run_evening_report(client):
+    """夜のレポート: 当日のアクティビティを配信"""
+    print("🌙 夜のレポートを生成します（当日のアクティビティ）")
+    try:
+        steps_data = client.get_steps()
+        heart_data = client.get_heart_rate()
+    except Exception as e:
+        print(f"アクティビティデータ取得失敗: {e}", file=sys.stderr)
+        traceback.print_exc()
+        notify_error(f"アクティビティデータ取得失敗: {e}")
+        sys.exit(1)
+
+    try:
+        ai_comment = generate_activity_comment(steps_data, heart_data)
+    except Exception as e:
+        print(f"Claude APIエラー: {e}", file=sys.stderr)
+        traceback.print_exc()
+        ai_comment = {"condition": "AIコメント生成失敗", "actions": ["ゆっくり休んでください"]}
+
+    try:
+        post_evening_report(steps_data, heart_data, ai_comment)
     except Exception as e:
         print(f"Slack投稿失敗: {e}", file=sys.stderr)
         traceback.print_exc()
@@ -113,6 +112,59 @@ def main():
             traceback.print_exc()
             notify_error(f"週次Slack投稿失敗: {e}")
             sys.exit(1)
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Fitbit Daily Health Report")
+    parser.add_argument(
+        "--mode",
+        choices=["morning", "evening"],
+        required=True,
+        help="morning: 睡眠データを配信, evening: アクティビティを配信",
+    )
+    args = parser.parse_args()
+
+    required = [
+        "FITBIT_CLIENT_ID",
+        "FITBIT_CLIENT_SECRET",
+        "FITBIT_REFRESH_TOKEN",
+        "ANTHROPIC_API_KEY",
+        "SLACK_WEBHOOK_URL",
+        "GH_PAT",
+        "GH_REPO_OWNER",
+        "GH_REPO_NAME",
+    ]
+    missing = [k for k in required if not os.environ.get(k)]
+    if missing:
+        print(f":x: 環境変数不足: {missing}")
+        sys.exit(1)
+
+    client = FitbitClient(
+        os.environ["FITBIT_CLIENT_ID"],
+        os.environ["FITBIT_CLIENT_SECRET"],
+        os.environ["FITBIT_REFRESH_TOKEN"],
+    )
+
+    try:
+        new_token = client.refresh_access_token()
+    except Exception as e:
+        print(f"トークンリフレッシュ失敗: {e}", file=sys.stderr)
+        traceback.print_exc()
+        notify_error(f"トークンリフレッシュ失敗: {e}")
+        sys.exit(1)
+
+    try:
+        update_github_secret(new_token)
+    except Exception as e:
+        print(f"Secret更新失敗: {e}", file=sys.stderr)
+        traceback.print_exc()
+        notify_error(f"Secret更新失敗: {e}")
+        sys.exit(1)
+
+    if args.mode == "morning":
+        run_morning_report(client)
+    else:
+        run_evening_report(client)
 
 
 if __name__ == "__main__":
