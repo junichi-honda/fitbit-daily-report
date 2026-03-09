@@ -33,12 +33,16 @@ class FitbitClient:
     def _headers(self):
         return {"Authorization": f"Bearer {self.access_token}"}
 
+    def _today(self):
+        return date.today().strftime("%Y-%m-%d")
+
     def _yesterday(self):
         return (date.today() - timedelta(days=1)).strftime("%Y-%m-%d")
 
     def get_sleep(self):
+        """当日の睡眠データを取得（朝に実行し、昨夜〜今朝の睡眠を取得）"""
         res = requests.get(
-            f"{FITBIT_SLEEP_API_BASE_URL}/sleep/date/{self._yesterday()}.json",
+            f"{FITBIT_SLEEP_API_BASE_URL}/sleep/date/{self._today()}.json",
             headers=self._headers(),
         )
         res.raise_for_status()
@@ -55,7 +59,8 @@ class FitbitClient:
         }
 
     def get_steps(self):
-        y = self._yesterday()
+        """当日のアクティビティを取得（夜に実行し、その日の歩数を取得）"""
+        y = self._today()
         s = requests.get(
             f"{self.BASE_URL}/activities/steps/date/{y}/1d.json",
             headers=self._headers(),
@@ -74,7 +79,8 @@ class FitbitClient:
         }
 
     def get_heart_rate(self):
-        y = self._yesterday()
+        """当日の心拍データを取得（夜に実行し、その日の心拍を取得）"""
+        y = self._today()
         hr = requests.get(
             f"{self.BASE_URL}/activities/heart/date/{y}/1d.json",
             headers=self._headers(),

@@ -48,6 +48,61 @@ def generate_health_comment(health_data):
     return _extract_json(text)
 
 
+def generate_sleep_comment(sleep_data):
+    """朝用: 睡眠データのみを分析"""
+    prompt = f"""以下の睡眠データを分析し、JSON形式のみで返してください。余計な説明は不要です。
+睡眠効率:{sleep_data['score']}% 睡眠時間:{sleep_data['total_minutes']}分
+深睡眠:{sleep_data['deep_minutes']}分 REM:{sleep_data['rem_minutes']}分
+浅睡眠:{sleep_data['light_minutes']}分 覚醒:{sleep_data['awake_minutes']}分
+
+{{"condition": "睡眠の質についての分析を2〜3文で", "actions": ["今日のコンディションに合わせた提案1", "提案2", "提案3"]}}"""
+
+    res = requests.post(
+        ANTHROPIC_API_URL,
+        headers={
+            "x-api-key": os.environ["ANTHROPIC_API_KEY"],
+            "anthropic-version": ANTHROPIC_API_VERSION,
+            "content-type": "application/json",
+        },
+        json={
+            "model": CLAUDE_MODEL,
+            "max_tokens": CLAUDE_MAX_TOKENS,
+            "system": "睡眠データを分析するパーソナルコーチです。日本語で回答します。JSONのみ返してください。",
+            "messages": [{"role": "user", "content": prompt}],
+        },
+    )
+    res.raise_for_status()
+    text = res.json()["content"][0]["text"].strip()
+    return _extract_json(text)
+
+
+def generate_activity_comment(steps_data, heart_data):
+    """夜用: アクティビティと心拍データを分析"""
+    prompt = f"""以下の本日のアクティビティデータを分析し、JSON形式のみで返してください。余計な説明は不要です。
+歩数:{steps_data['steps']}歩 消費カロリー:{steps_data['calories']}kcal
+安静時心拍:{heart_data['resting_heart_rate']}bpm HRV:{heart_data['hrv']}ms
+
+{{"condition": "今日の活動についての分析を2〜3文で", "actions": ["明日に向けた提案1", "提案2", "提案3"]}}"""
+
+    res = requests.post(
+        ANTHROPIC_API_URL,
+        headers={
+            "x-api-key": os.environ["ANTHROPIC_API_KEY"],
+            "anthropic-version": ANTHROPIC_API_VERSION,
+            "content-type": "application/json",
+        },
+        json={
+            "model": CLAUDE_MODEL,
+            "max_tokens": CLAUDE_MAX_TOKENS,
+            "system": "アクティビティデータを分析するパーソナルコーチです。日本語で回答します。JSONのみ返してください。",
+            "messages": [{"role": "user", "content": prompt}],
+        },
+    )
+    res.raise_for_status()
+    text = res.json()["content"][0]["text"].strip()
+    return _extract_json(text)
+
+
 def generate_weekly_comment(weekly_data):
     sleep = weekly_data["sleep"]
     steps = weekly_data["steps"]

@@ -1,10 +1,14 @@
 import os, requests
-from datetime import date, timedelta
+from datetime import date
 from config import DAILY_STEP_GOAL
 
 
 def _get_slack_user_id() -> str:
     return os.environ.get("SLACK_USER_ID", "")
+
+
+def _today() -> str:
+    return date.today().strftime("%Y/%m/%d")
 
 
 def _format_sleep_bar(minutes, total_minutes):
@@ -107,6 +111,137 @@ def post_health_report(health_data, ai_comment):
     res = requests.post(webhook_url, json={"blocks": blocks})
     res.raise_for_status()
     print("✅ Slack投稿完了")
+
+
+def post_morning_report(sleep_data, ai_comment):
+    """朝の睡眠レポートを投稿"""
+    webhook_url = os.environ["SLACK_WEBHOOK_URL"]
+    today = _today()
+    user_id = _get_slack_user_id()
+    mention = f"<@{user_id}> " if user_id else ""
+
+    total_h = sleep_data["total_minutes"] // 60
+    total_m = sleep_data["total_minutes"] % 60
+
+    actions_text = "\n".join(f"• {a}" for a in ai_comment.get("actions", []))
+
+    blocks = [
+        {
+            "type": "header",
+            "text": {
+                "type": "plain_text",
+                "text": f"🌅 Morning Sleep Report — {today}",
+            },
+        },
+        {"type": "divider"},
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": (
+                    f"*😴 昨夜の睡眠*\n"
+                    f"睡眠時間: *{total_h}時間{total_m}分* ｜ 効率: *{sleep_data['score']}%*\n"
+                    f"深い睡眠: {sleep_data['deep_minutes']}分 {_format_sleep_bar(sleep_data['deep_minutes'], sleep_data['total_minutes'])}\n"
+                    f"REM睡眠: {sleep_data['rem_minutes']}分 {_format_sleep_bar(sleep_data['rem_minutes'], sleep_data['total_minutes'])}\n"
+                    f"浅い睡眠: {sleep_data['light_minutes']}分 {_format_sleep_bar(sleep_data['light_minutes'], sleep_data['total_minutes'])}\n"
+                    f"覚醒: {sleep_data['awake_minutes']}分 {_format_sleep_bar(sleep_data['awake_minutes'], sleep_data['total_minutes'])}"
+                ),
+            },
+        },
+        {"type": "divider"},
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": (
+                    f"*🤖 AIコーチからのコメント*\n"
+                    f"{ai_comment.get('condition', '')}\n\n"
+                    f"*💡 今日のアクション*\n{actions_text}"
+                ),
+            },
+        },
+        {
+            "type": "context",
+            "elements": [
+                {
+                    "type": "mrkdwn",
+                    "text": f"{mention}Powered by Fitbit API × Claude API × GitHub Actions",
+                }
+            ],
+        },
+    ]
+
+    res = requests.post(webhook_url, json={"blocks": blocks})
+    res.raise_for_status()
+    print("✅ 朝のレポート投稿完了")
+
+
+def post_evening_report(steps_data, heart_data, ai_comment):
+    """夜のアクティビティレポートを投稿"""
+    webhook_url = os.environ["SLACK_WEBHOOK_URL"]
+    today = _today()
+    user_id = _get_slack_user_id()
+    mention = f"<@{user_id}> " if user_id else ""
+
+    actions_text = "\n".join(f"• {a}" for a in ai_comment.get("actions", []))
+
+    blocks = [
+        {
+            "type": "header",
+            "text": {
+                "type": "plain_text",
+                "text": f"🌙 Evening Activity Report — {today}",
+            },
+        },
+        {"type": "divider"},
+        {
+            "type": "section",
+            "fields": [
+                {
+                    "type": "mrkdwn",
+                    "text": (
+                        f"*🚶 今日のアクティビティ*\n"
+                        f"歩数: *{steps_data['steps']:,}歩*\n"
+                        f"{_format_steps_bar(steps_data['steps'])} ({min(steps_data['steps'] * 100 // DAILY_STEP_GOAL, 100)}%)\n"
+                        f"消費カロリー: *{steps_data['calories']:,}kcal*"
+                    ),
+                },
+                {
+                    "type": "mrkdwn",
+                    "text": (
+                        f"*❤️ 心拍*\n"
+                        f"安静時心拍: *{heart_data['resting_heart_rate']}bpm*\n"
+                        f"HRV (RMSSD): *{heart_data['hrv']}ms*"
+                    ),
+                },
+            ],
+        },
+        {"type": "divider"},
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": (
+                    f"*🤖 AIコーチからのコメント*\n"
+                    f"{ai_comment.get('condition', '')}\n\n"
+                    f"*💡 明日に向けて*\n{actions_text}"
+                ),
+            },
+        },
+        {
+            "type": "context",
+            "elements": [
+                {
+                    "type": "mrkdwn",
+                    "text": f"{mention}Powered by Fitbit API × Claude API × GitHub Actions",
+                }
+            ],
+        },
+    ]
+
+    res = requests.post(webhook_url, json={"blocks": blocks})
+    res.raise_for_status()
+    print("✅ 夜のレポート投稿完了")
 
 
 def post_weekly_report(weekly_data, ai_comment):
