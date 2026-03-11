@@ -7,12 +7,14 @@ from claude_client import (
     generate_weekly_comment,
     generate_sleep_comment,
     generate_activity_comment,
+    generate_monthly_comment,
 )
 from slack_notifier import (
     post_health_report,
     post_weekly_report,
     post_morning_report,
     post_evening_report,
+    post_monthly_report,
 )
 
 
@@ -53,6 +55,40 @@ def run_morning_report(client):
         sys.exit(1)
 
 
+def run_monthly_report(client):
+    """月次レポート: 今月・先月のデータを比較して配信"""
+    print("📅 月次レポートを生成します（今月・先月の比較）")
+    try:
+        monthly_data = {
+            "sleep": client.get_monthly_sleep(),
+            "steps": client.get_monthly_steps(),
+            "heart": client.get_monthly_heart_rate(),
+        }
+    except Exception as e:
+        print(f"月次データ取得失敗: {e}", file=sys.stderr)
+        traceback.print_exc()
+        notify_error(f"月次データ取得失敗: {e}")
+        sys.exit(1)
+
+    try:
+        monthly_comment = generate_monthly_comment(monthly_data)
+    except Exception as e:
+        print(f"月次Claude APIエラー: {e}", file=sys.stderr)
+        traceback.print_exc()
+        monthly_comment = {
+            "review": "月次レビュー生成失敗",
+            "advice": ["規則正しい生活を心がけましょう"],
+        }
+
+    try:
+        post_monthly_report(monthly_data, monthly_comment)
+    except Exception as e:
+        print(f"月次Slack投稿失敗: {e}", file=sys.stderr)
+        traceback.print_exc()
+        notify_error(f"月次Slack投稿失敗: {e}")
+        sys.exit(1)
+
+
 def run_evening_report(client):
     """夜のレポート: 当日のアクティビティを配信"""
     print("🌙 夜のレポートを生成します（当日のアクティビティ）")
@@ -79,6 +115,10 @@ def run_evening_report(client):
         traceback.print_exc()
         notify_error(f"Slack投稿失敗: {e}")
         sys.exit(1)
+
+    # 毎月1日は月次サマリーも投稿
+    if date.today().day == 1:
+        run_monthly_report(client)
 
     # 日曜日は週次サマリーも投稿
     if date.today().weekday() == 6:

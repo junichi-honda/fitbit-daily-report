@@ -140,3 +140,34 @@ def generate_weekly_comment(weekly_data):
     res.raise_for_status()
     text = res.json()["content"][0]["text"].strip()
     return _extract_json(text)
+
+
+def generate_monthly_comment(monthly_data):
+    sleep = monthly_data["sleep"]
+    steps = monthly_data["steps"]
+    heart = monthly_data["heart"]
+    prompt = f"""以下の今月と先月のFitbitデータを比較分析し、JSON形式のみで返してください。余計な説明は不要です。
+
+【睡眠】今月平均:{sleep['avg_minutes']}分 効率:{sleep['avg_efficiency']}% / 先月平均:{sleep['last_avg_minutes']}分 効率:{sleep['last_avg_efficiency']}%
+【歩数】今月平均:{steps['avg_steps']}歩/日 合計:{steps['total_steps']}歩 / 先月平均:{steps['last_avg_steps']}歩/日 合計:{steps['last_total_steps']}歩
+【心拍】今月安静時心拍:{heart['avg_resting_heart_rate']}bpm HRV:{heart['avg_hrv']}ms / 先月:{heart['last_avg_resting_heart_rate']}bpm HRV:{heart['last_avg_hrv']}ms
+
+{{"review": "今月の振り返りと先月との比較を3〜4文で", "advice": ["来月のアドバイス1", "来月のアドバイス2", "来月のアドバイス3"]}}"""
+
+    res = requests.post(
+        ANTHROPIC_API_URL,
+        headers={
+            "x-api-key": os.environ["ANTHROPIC_API_KEY"],
+            "anthropic-version": ANTHROPIC_API_VERSION,
+            "content-type": "application/json",
+        },
+        json={
+            "model": CLAUDE_MODEL,
+            "max_tokens": CLAUDE_MAX_TOKENS,
+            "system": "健康データを分析するパーソナルコーチです。日本語で回答します。JSONのみ返してください。",
+            "messages": [{"role": "user", "content": prompt}],
+        },
+    )
+    res.raise_for_status()
+    text = res.json()["content"][0]["text"].strip()
+    return _extract_json(text)

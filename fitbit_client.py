@@ -108,6 +108,19 @@ class FitbitClient:
         start = end - timedelta(days=6)
         return start.strftime("%Y-%m-%d"), end.strftime("%Y-%m-%d")
 
+    def _month_range(self):
+        """今月: 1日〜昨日"""
+        end = date.today() - timedelta(days=1)
+        start = end.replace(day=1)
+        return start.strftime("%Y-%m-%d"), end.strftime("%Y-%m-%d")
+
+    def _last_month_range(self):
+        """先月: 先月1日〜先月末日"""
+        today = date.today()
+        last_day = today.replace(day=1) - timedelta(days=1)
+        first_day = last_day.replace(day=1)
+        return first_day.strftime("%Y-%m-%d"), last_day.strftime("%Y-%m-%d")
+
     def get_weekly_sleep(self):
         start, end = self._week_range()
         res = requests.get(
@@ -168,6 +181,105 @@ class FitbitClient:
             "total_steps": total_steps,
             "avg_steps": total_steps // n,
             "avg_calories": total_cal // n,
+        }
+
+    def get_monthly_sleep(self):
+        """今月・先月の睡眠平均を返す"""
+        def _fetch_avg(start, end):
+            res = requests.get(
+                f"{FITBIT_SLEEP_API_BASE_URL}/sleep/date/{start}/{end}.json",
+                headers=self._headers(),
+            )
+            res.raise_for_status()
+            records = [
+                s for s in res.json().get("sleep", []) if s.get("isMainSleep")
+            ]
+            if not records:
+                return 0, 0
+            avg_min = sum(s.get("minutesAsleep", 0) for s in records) // len(records)
+            avg_eff = sum(s.get("efficiency", 0) for s in records) // len(records)
+            return avg_min, avg_eff
+
+        cur_start, cur_end = self._month_range()
+        last_start, last_end = self._last_month_range()
+        avg_min, avg_eff = _fetch_avg(cur_start, cur_end)
+        last_avg_min, last_avg_eff = _fetch_avg(last_start, last_end)
+        return {
+            "avg_minutes": avg_min,
+            "avg_efficiency": avg_eff,
+            "last_avg_minutes": last_avg_min,
+            "last_avg_efficiency": last_avg_eff,
+        }
+
+    def get_monthly_steps(self):
+        """今月・先月の歩数集計を返す"""
+        def _fetch_totals(start, end):
+            s = requests.get(
+                f"{self.BASE_URL}/activities/steps/date/{start}/{end}.json",
+                headers=self._headers(),
+            )
+            c = requests.get(
+                f"{self.BASE_URL}/activities/calories/date/{start}/{end}.json",
+                headers=self._headers(),
+            )
+            s.raise_for_status()
+            c.raise_for_status()
+            steps_list = s.json().get("activities-steps", [])
+            cal_list = c.json().get("activities-calories", [])
+            total_steps = sum(int(x["value"]) for x in steps_list)
+            total_cal = sum(int(x["value"]) for x in cal_list)
+            n = len(steps_list) or 1
+            return total_steps, total_steps // n, total_cal // n
+
+        cur_start, cur_end = self._month_range()
+        last_start, last_end = self._last_month_range()
+        total, avg, avg_cal = _fetch_totals(cur_start, cur_end)
+        last_total, last_avg, last_avg_cal = _fetch_totals(last_start, last_end)
+        return {
+            "total_steps": total,
+            "avg_steps": avg,
+            "avg_calories": avg_cal,
+            "last_total_steps": last_total,
+            "last_avg_steps": last_avg,
+            "last_avg_calories": last_avg_cal,
+        }
+
+    def get_monthly_heart_rate(self):
+        """今月・先月の心拍平均を返す"""
+        def _fetch_avg(start, end):
+            hr = requests.get(
+                f"{self.BASE_URL}/activities/heart/date/{start}/{end}.json",
+                headers=self._headers(),
+            )
+            hr.raise_for_status()
+            rhr_values = [
+                e.get("value", {}).get("restingHeartRate")
+                for e in hr.json().get("activities-heart", [])
+                if e.get("value", {}).get("restingHeartRate")
+            ]
+            hrv_res = requests.get(
+                f"{self.BASE_URL}/hrv/date/{start}/{end}.json",
+                headers=self._headers(),
+            )
+            hrv_values = []
+            if hrv_res.status_code == 200:
+                for entry in hrv_res.json().get("hrv", []):
+                    v = entry.get("value", {}).get("dailyRmssd")
+                    if isinstance(v, (int, float)):
+                        hrv_values.append(v)
+            avg_rhr = round(sum(rhr_values) / len(rhr_values), 1) if rhr_values else "N/A"
+            avg_hrv = round(sum(hrv_values) / len(hrv_values), 1) if hrv_values else "N/A"
+            return avg_rhr, avg_hrv
+
+        cur_start, cur_end = self._month_range()
+        last_start, last_end = self._last_month_range()
+        avg_rhr, avg_hrv = _fetch_avg(cur_start, cur_end)
+        last_avg_rhr, last_avg_hrv = _fetch_avg(last_start, last_end)
+        return {
+            "avg_resting_heart_rate": avg_rhr,
+            "avg_hrv": avg_hrv,
+            "last_avg_resting_heart_rate": last_avg_rhr,
+            "last_avg_hrv": last_avg_hrv,
         }
 
     def get_weekly_heart_rate(self):
