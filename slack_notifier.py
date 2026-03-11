@@ -339,3 +339,118 @@ def post_weekly_report(weekly_data, ai_comment):
     res = requests.post(webhook_url, json={"blocks": blocks})
     res.raise_for_status()
     print("✅ 週次レポート投稿完了")
+
+
+def post_monthly_report(monthly_data, ai_comment):
+    webhook_url = os.environ["SLACK_WEBHOOK_URL"]
+    sleep = monthly_data["sleep"]
+    steps = monthly_data["steps"]
+    heart = monthly_data["heart"]
+    user_id = _get_slack_user_id()
+    mention = f"<@{user_id}> " if user_id else ""
+
+    today = date.today()
+    last_day = today.replace(day=1) - timedelta(days=1)
+    month_label = f"{last_day.year}年{last_day.month}月"
+
+    def _diff(current, last, unit=""):
+        if current == "N/A" or last == "N/A":
+            return ""
+        diff = current - last
+        arrow = "↑" if diff > 0 else "↓" if diff < 0 else "→"
+        return f" {arrow}{abs(diff)}{unit}"
+
+    avg_h = sleep["avg_minutes"] // 60
+    avg_m = sleep["avg_minutes"] % 60
+    sleep_diff = _diff(sleep["avg_minutes"], sleep["last_avg_minutes"], "分")
+    eff_diff = _diff(sleep["avg_efficiency"], sleep["last_avg_efficiency"], "%")
+
+    steps_diff = _diff(steps["avg_steps"], steps["last_avg_steps"], "歩")
+    total_diff = _diff(steps["total_steps"], steps["last_total_steps"], "歩")
+
+    rhr_diff = _diff(
+        heart["avg_resting_heart_rate"]
+        if heart["avg_resting_heart_rate"] != "N/A" else "N/A",
+        heart["last_avg_resting_heart_rate"]
+        if heart["last_avg_resting_heart_rate"] != "N/A" else "N/A",
+        "bpm",
+    )
+    hrv_diff = _diff(
+        heart["avg_hrv"] if heart["avg_hrv"] != "N/A" else "N/A",
+        heart["last_avg_hrv"] if heart["last_avg_hrv"] != "N/A" else "N/A",
+        "ms",
+    )
+
+    advice_text = "\n".join(f"• {a}" for a in ai_comment.get("advice", []))
+
+    blocks = [
+        {
+            "type": "header",
+            "text": {
+                "type": "plain_text",
+                "text": f"📅 Monthly Health Summary — {month_label}",
+            },
+        },
+        {"type": "divider"},
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": (
+                    f"*😴 睡眠（月間平均）*\n"
+                    f"睡眠時間: *{avg_h}時間{avg_m}分*{sleep_diff} ｜ "
+                    f"効率: *{sleep['avg_efficiency']}%*{eff_diff}\n"
+                    f"_先月: {sleep['last_avg_minutes'] // 60}時間{sleep['last_avg_minutes'] % 60}分 / {sleep['last_avg_efficiency']}%_"
+                ),
+            },
+        },
+        {"type": "divider"},
+        {
+            "type": "section",
+            "fields": [
+                {
+                    "type": "mrkdwn",
+                    "text": (
+                        f"*🚶 アクティビティ（月間）*\n"
+                        f"平均歩数: *{steps['avg_steps']:,}歩/日*{steps_diff}\n"
+                        f"合計歩数: *{steps['total_steps']:,}歩*{total_diff}\n"
+                        f"_先月: {steps['last_avg_steps']:,}歩/日 / {steps['last_total_steps']:,}歩_"
+                    ),
+                },
+                {
+                    "type": "mrkdwn",
+                    "text": (
+                        f"*❤️ 心拍（月間平均）*\n"
+                        f"安静時心拍: *{heart['avg_resting_heart_rate']}bpm*{rhr_diff}\n"
+                        f"HRV (RMSSD): *{heart['avg_hrv']}ms*{hrv_diff}\n"
+                        f"_先月: {heart['last_avg_resting_heart_rate']}bpm / {heart['last_avg_hrv']}ms_"
+                    ),
+                },
+            ],
+        },
+        {"type": "divider"},
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": (
+                    f"*🤖 月間レビュー*\n"
+                    f"{ai_comment.get('review', '')}\n\n"
+                    f"*💡 来月のアドバイス*\n{advice_text}"
+                ),
+            },
+        },
+        {
+            "type": "context",
+            "elements": [
+                {
+                    "type": "mrkdwn",
+                    "text": f"{mention}Powered by Fitbit API × Claude API × GitHub Actions",
+                }
+            ],
+        },
+    ]
+
+    res = requests.post(webhook_url, json={"blocks": blocks})
+    res.raise_for_status()
+    print("✅ 月次レポート投稿完了")
