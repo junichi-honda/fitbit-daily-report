@@ -27,7 +27,7 @@ def generate_health_comment(health_data):
 歩数:{steps['steps']}歩 消費:{steps['calories']}kcal
 安静時心拍:{heart['resting_heart_rate']}bpm HRV:{heart['hrv']}ms
 
-{{"condition": "今日の体の状態を2〜3文で", "actions": ["提案1", "提案2", "提案3"]}}"""
+{{"condition": "今日の体の状態を1文で", "actions": ["提案1", "提案2"]}}"""
 
     res = requests.post(
         ANTHROPIC_API_URL,
@@ -55,7 +55,7 @@ def generate_sleep_comment(sleep_data):
 深睡眠:{sleep_data['deep_minutes']}分 REM:{sleep_data['rem_minutes']}分
 浅睡眠:{sleep_data['light_minutes']}分 覚醒:{sleep_data['awake_minutes']}分
 
-{{"condition": "睡眠の質についての分析を2〜3文で", "actions": ["今日のコンディションに合わせた提案1", "提案2", "提案3"]}}"""
+{{"condition": "睡眠の質についての分析を1文で", "actions": ["今日のコンディションに合わせた提案1", "提案2"]}}"""
 
     res = requests.post(
         ANTHROPIC_API_URL,
@@ -82,7 +82,7 @@ def generate_activity_comment(steps_data, heart_data):
 歩数:{steps_data['steps']}歩 消費カロリー:{steps_data['calories']}kcal
 安静時心拍:{heart_data['resting_heart_rate']}bpm HRV:{heart_data['hrv']}ms
 
-{{"condition": "今日の活動についての分析を2〜3文で", "actions": ["明日に向けた提案1", "提案2", "提案3"]}}"""
+{{"condition": "今日の活動についての分析を1文で", "actions": ["明日に向けた提案1", "提案2"]}}"""
 
     res = requests.post(
         ANTHROPIC_API_URL,
@@ -121,7 +121,7 @@ def generate_weekly_comment(weekly_data):
 日別: {steps_daily}
 【心拍】安静時心拍平均:{heart['avg_resting_heart_rate']}bpm HRV平均:{heart['avg_hrv']}ms
 
-{{"review": "1週間の振り返りを3〜4文で", "advice": ["来週のアドバイス1", "来週のアドバイス2", "来週のアドバイス3"]}}"""
+{{"review": "1週間の振り返りを1〜2文で", "advice": ["来週のアドバイス1", "来週のアドバイス2"]}}"""
 
     res = requests.post(
         ANTHROPIC_API_URL,
@@ -152,7 +152,7 @@ def generate_monthly_comment(monthly_data):
 【歩数】今月合計:{steps['total_steps']}歩 平均:{steps['avg_steps']}歩/日 ／ 先月合計:{steps['last_total_steps']}歩 平均:{steps['last_avg_steps']}歩/日
 【心拍】今月安静時心拍平均:{heart['avg_resting_heart_rate']}bpm HRV平均:{heart['avg_hrv']}ms ／ 先月:{heart['last_avg_resting_heart_rate']}bpm HRV:{heart['last_avg_hrv']}ms
 
-{{"review": "今月の健康状態と先月との比較を3〜4文で", "advice": ["来月のアドバイス1", "来月のアドバイス2", "来月のアドバイス3"]}}"""
+{{"review": "今月の健康状態と先月との比較を1〜2文で", "advice": ["来月のアドバイス1", "来月のアドバイス2"]}}"""
 
     res = requests.post(
         ANTHROPIC_API_URL,
