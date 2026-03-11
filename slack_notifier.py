@@ -1,5 +1,5 @@
 import os, requests
-from datetime import date
+from datetime import date, timedelta
 from config import DAILY_STEP_GOAL
 
 
