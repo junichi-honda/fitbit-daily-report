@@ -8,7 +8,7 @@ WEEKDAY_LABELS = ["月", "火", "水", "木", "金", "土", "日"]
 # Claude API
 ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages"
 ANTHROPIC_API_VERSION = "2023-06-01"
-CLAUDE_MODEL = "claude-sonnet-4-6"
+CLAUDE_MODEL = "claude-haiku-4-5-20251001"
 CLAUDE_MAX_TOKENS = 256
 
 # Slack
