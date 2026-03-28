@@ -3,10 +3,7 @@ from datetime import date
 from fitbit_client import FitbitClient
 from token_manager import update_github_secret
 from claude_client import (
-    generate_health_comment,
     generate_weekly_comment,
-    generate_sleep_comment,
-    generate_activity_comment,
     generate_monthly_comment,
 )
 from slack_notifier import (
@@ -40,14 +37,7 @@ def run_morning_report(client):
         sys.exit(1)
 
     try:
-        ai_comment = generate_sleep_comment(sleep_data)
-    except Exception as e:
-        print(f"Claude APIエラー: {e}", file=sys.stderr)
-        traceback.print_exc()
-        ai_comment = {"condition": "AIコメント生成失敗", "actions": ["良い一日を！"]}
-
-    try:
-        post_morning_report(sleep_data, ai_comment)
+        post_morning_report(sleep_data)
     except Exception as e:
         print(f"Slack投稿失敗: {e}", file=sys.stderr)
         traceback.print_exc()
@@ -102,14 +92,7 @@ def run_evening_report(client):
         sys.exit(1)
 
     try:
-        ai_comment = generate_activity_comment(steps_data, heart_data)
-    except Exception as e:
-        print(f"Claude APIエラー: {e}", file=sys.stderr)
-        traceback.print_exc()
-        ai_comment = {"condition": "AIコメント生成失敗", "actions": ["ゆっくり休んでください"]}
-
-    try:
-        post_evening_report(steps_data, heart_data, ai_comment)
+        post_evening_report(steps_data, heart_data)
     except Exception as e:
         print(f"Slack投稿失敗: {e}", file=sys.stderr)
         traceback.print_exc()
