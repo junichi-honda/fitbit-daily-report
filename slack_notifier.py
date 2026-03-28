@@ -113,7 +113,7 @@ def post_health_report(health_data, ai_comment):
     print("✅ Slack投稿完了")
 
 
-def post_morning_report(sleep_data, ai_comment):
+def post_morning_report(sleep_data):
     """朝の睡眠レポートを投稿"""
     webhook_url = os.environ["SLACK_WEBHOOK_URL"]
     today = _today()
@@ -122,8 +122,6 @@ def post_morning_report(sleep_data, ai_comment):
 
     total_h = sleep_data["total_minutes"] // 60
     total_m = sleep_data["total_minutes"] % 60
-
-    actions_text = "\n".join(f"• {a}" for a in ai_comment.get("actions", []))
 
     blocks = [
         {
@@ -148,24 +146,12 @@ def post_morning_report(sleep_data, ai_comment):
                 ),
             },
         },
-        {"type": "divider"},
-        {
-            "type": "section",
-            "text": {
-                "type": "mrkdwn",
-                "text": (
-                    f"*🤖 AIコーチからのコメント*\n"
-                    f"{ai_comment.get('condition', '')}\n\n"
-                    f"*💡 今日のアクション*\n{actions_text}"
-                ),
-            },
-        },
         {
             "type": "context",
             "elements": [
                 {
                     "type": "mrkdwn",
-                    "text": f"{mention}Powered by Fitbit API × Claude API × GitHub Actions",
+                    "text": f"{mention}Powered by Fitbit API × GitHub Actions",
                 }
             ],
         },
@@ -176,14 +162,12 @@ def post_morning_report(sleep_data, ai_comment):
     print("✅ 朝のレポート投稿完了")
 
 
-def post_evening_report(steps_data, heart_data, ai_comment):
+def post_evening_report(steps_data, heart_data):
     """夜のアクティビティレポートを投稿"""
     webhook_url = os.environ["SLACK_WEBHOOK_URL"]
     today = _today()
     user_id = _get_slack_user_id()
     mention = f"<@{user_id}> " if user_id else ""
-
-    actions_text = "\n".join(f"• {a}" for a in ai_comment.get("actions", []))
 
     blocks = [
         {
@@ -216,24 +200,12 @@ def post_evening_report(steps_data, heart_data, ai_comment):
                 },
             ],
         },
-        {"type": "divider"},
-        {
-            "type": "section",
-            "text": {
-                "type": "mrkdwn",
-                "text": (
-                    f"*🤖 AIコーチからのコメント*\n"
-                    f"{ai_comment.get('condition', '')}\n\n"
-                    f"*💡 明日に向けて*\n{actions_text}"
-                ),
-            },
-        },
         {
             "type": "context",
             "elements": [
                 {
                     "type": "mrkdwn",
-                    "text": f"{mention}Powered by Fitbit API × Claude API × GitHub Actions",
+                    "text": f"{mention}Powered by Fitbit API × GitHub Actions",
                 }
             ],
         },
