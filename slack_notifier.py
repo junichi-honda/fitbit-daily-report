@@ -425,3 +425,23 @@ def post_monthly_report(monthly_data, ai_comment):
     res = requests.post(webhook_url, json={"blocks": blocks})
     res.raise_for_status()
     print("✅ 月次レポート投稿完了")
+
+
+def post_step_alert(message: str) -> None:
+    webhook_url = os.environ["SLACK_WEBHOOK_URL"]
+    user_id = _get_slack_user_id()
+    mention = f"<@{user_id}> " if user_id else ""
+
+    blocks = [
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": f"{mention}{message}",
+            },
+        },
+    ]
+
+    res = requests.post(webhook_url, json={"blocks": blocks})
+    res.raise_for_status()
+    print("✅ 歩数アラート投稿完了")

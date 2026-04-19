@@ -1,5 +1,13 @@
 import os, json, re, requests
-from config import ANTHROPIC_API_URL, ANTHROPIC_API_VERSION, CLAUDE_MODEL, CLAUDE_MAX_TOKENS
+from config import (
+    ANTHROPIC_API_URL,
+    ANTHROPIC_API_VERSION,
+    CLAUDE_MODEL,
+    CLAUDE_MAX_TOKENS,
+    DAILY_STEP_GOAL,
+    MIDDAY_STEP_GOAL,
+    EOD_STEP_WARN,
+)
 
 
 def _extract_json(text):
@@ -83,3 +91,61 @@ def generate_monthly_comment(monthly_data):
     res.raise_for_status()
     text = res.json()["content"][0]["text"].strip()
     return _extract_json(text)
+
+
+def generate_step_alert(steps: int, alert_type: str) -> str:
+    remaining = max(0, DAILY_STEP_GOAL - steps)
+    progress_pct = min(100, int(steps / DAILY_STEP_GOAL * 100))
+
+    if alert_type == "midday":
+        timing_desc = "お昼休み前（12:00）"
+        situation = (
+            f"現在歩数: {steps:,}歩（目標{DAILY_STEP_GOAL:,}歩の{progress_pct}%）\n"
+            f"残り: {remaining:,}歩\n"
+            + ("午前中はあまり動けていない状況です。" if steps < MIDDAY_STEP_GOAL else "午前中はそこそこ動けています。")
+        )
+        action_hint = (
+            "昼休みに近所を一周する、コンビニまで歩くなど具体的な行動を1つ提案してください。"
+            if steps < MIDDAY_STEP_GOAL
+            else "このままのペースを維持しつつ、昼休みに軽く外に出ることを勧めてください。"
+        )
+    else:
+        timing_desc = "就業終了前（17:00）"
+        situation = (
+            f"現在歩数: {steps:,}歩（目標{DAILY_STEP_GOAL:,}歩の{progress_pct}%）\n"
+            f"残り: {remaining:,}歩\n"
+            + ("今日はかなり歩数が少ない状況です。" if steps < EOD_STEP_WARN else "今日はまずまずのペースです。")
+        )
+        action_hint = "仕事終わりに取り入れやすい、5〜15分程度の具体的な行動を1つ提案してください。"
+
+    prompt = f"""あなたはフレンドリーな健康習慣コーチです。
+以下の状況をもとに、Slackに送る短いメッセージを日本語で書いてください。
+
+タイミング: {timing_desc}
+{situation}
+
+ルール:
+- 全体を200文字以内に収める
+- 責めるトーンは使わない。事実ベースで淡々と、でも温かく
+- 絵文字を1〜2個だけ使う
+- {action_hint}
+- 「今日の目標: {DAILY_STEP_GOAL:,}歩」は必ず含める
+- 運動したくなるような座右の銘を1つ添える（有名人の言葉・ことわざなど、毎回異なるものを選ぶ）
+"""
+
+    res = requests.post(
+        ANTHROPIC_API_URL,
+        headers={
+            "x-api-key": os.environ["ANTHROPIC_API_KEY"],
+            "anthropic-version": ANTHROPIC_API_VERSION,
+            "content-type": "application/json",
+        },
+        json={
+            "model": CLAUDE_MODEL,
+            "max_tokens": 300,
+            "system": "フレンドリーな健康習慣コーチです。日本語で回答します。",
+            "messages": [{"role": "user", "content": prompt}],
+        },
+    )
+    res.raise_for_status()
+    return res.json()["content"][0]["text"].strip()

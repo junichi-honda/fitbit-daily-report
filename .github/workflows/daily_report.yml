@@ -2,8 +2,10 @@ name: Daily Health Report
 
 on:
   schedule:
-    - cron: "0 0 * * *" # UTC 00:00 = JST 09:00（朝の睡眠レポート）
-    - cron: "0 12 * * *" # UTC 12:00 = JST 21:00（夜のアクティビティレポート）
+    - cron: "0 0 * * *"     # UTC 00:00 = JST 09:00（朝の睡眠レポート）
+    - cron: "0 12 * * *"    # UTC 12:00 = JST 21:00（夜のアクティビティレポート）
+    - cron: "0 3 * * 1-5"   # UTC 03:00 = JST 12:00（平日昼の歩数アラート）
+    - cron: "0 8 * * 1-5"   # UTC 08:00 = JST 17:00（平日夕方の歩数アラート）
   workflow_dispatch:
     inputs:
       mode:
@@ -14,6 +16,8 @@ on:
         options:
           - morning
           - evening
+          - midday
+          - eod
 
 jobs:
   morning-report:
@@ -69,3 +73,57 @@ jobs:
           GH_REPO_OWNER: ${{ github.repository_owner }}
           GH_REPO_NAME: ${{ github.event.repository.name }}
         run: python main.py --mode evening
+
+  midday-alert:
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'midday' || github.event_name == 'schedule' && github.event.schedule == '0 3 * * 1-5'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run midday step alert
+        env:
+          FITBIT_CLIENT_ID: ${{ vars.FITBIT_CLIENT_ID }}
+          FITBIT_CLIENT_SECRET: ${{ secrets.FITBIT_CLIENT_SECRET }}
+          FITBIT_REFRESH_TOKEN: ${{ secrets.FITBIT_REFRESH_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_USER_ID: ${{ vars.SLACK_USER_ID }}
+          GH_PAT: ${{ secrets.GH_PAT }}
+          GH_REPO_OWNER: ${{ github.repository_owner }}
+          GH_REPO_NAME: ${{ github.event.repository.name }}
+        run: python main.py --mode midday
+
+  eod-alert:
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'eod' || github.event_name == 'schedule' && github.event.schedule == '0 8 * * 1-5'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run end-of-day step alert
+        env:
+          FITBIT_CLIENT_ID: ${{ vars.FITBIT_CLIENT_ID }}
+          FITBIT_CLIENT_SECRET: ${{ secrets.FITBIT_CLIENT_SECRET }}
+          FITBIT_REFRESH_TOKEN: ${{ secrets.FITBIT_REFRESH_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_USER_ID: ${{ vars.SLACK_USER_ID }}
+          GH_PAT: ${{ secrets.GH_PAT }}
+          GH_REPO_OWNER: ${{ github.repository_owner }}
+          GH_REPO_NAME: ${{ github.event.repository.name }}
+        run: python main.py --mode eod
