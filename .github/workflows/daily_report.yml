@@ -2,10 +2,10 @@ name: Daily Health Report
 
 on:
   schedule:
-    - cron: "0 0 * * *"     # UTC 00:00 = JST 09:00（朝の睡眠レポート）
+    - cron: "0 22 * * *"    # UTC 22:00 = JST 07:00（朝の睡眠レポート）
     - cron: "0 12 * * *"    # UTC 12:00 = JST 21:00（夜のアクティビティレポート）
-    - cron: "0 3 * * 1-5"   # UTC 03:00 = JST 12:00（平日昼の歩数アラート）
-    - cron: "0 8 * * 1-5"   # UTC 08:00 = JST 17:00（平日夕方の歩数アラート）
+    - cron: "0 0 * * 1-5"   # UTC 00:00 = JST 09:00（平日昼の歩数アラート）
+    - cron: "0 6 * * 1-5"   # UTC 06:00 = JST 15:00（平日夕方の歩数アラート）
   workflow_dispatch:
     inputs:
       mode:
@@ -21,7 +21,7 @@ on:
 
 jobs:
   morning-report:
-    if: github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'morning' || github.event_name == 'schedule' && github.event.schedule == '0 0 * * *'
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'morning' || github.event_name == 'schedule' && github.event.schedule == '0 22 * * *'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -75,7 +75,7 @@ jobs:
         run: python main.py --mode evening
 
   midday-alert:
-    if: github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'midday' || github.event_name == 'schedule' && github.event.schedule == '0 3 * * 1-5'
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'midday' || github.event_name == 'schedule' && github.event.schedule == '0 0 * * 1-5'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -102,7 +102,7 @@ jobs:
         run: python main.py --mode midday
 
   eod-alert:
-    if: github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'eod' || github.event_name == 'schedule' && github.event.schedule == '0 8 * * 1-5'
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'eod' || github.event_name == 'schedule' && github.event.schedule == '0 6 * * 1-5'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
