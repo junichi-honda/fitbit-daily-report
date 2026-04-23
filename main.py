@@ -5,7 +5,6 @@ from token_manager import update_github_secret
 from claude_client import (
     generate_weekly_comment,
     generate_monthly_comment,
-    generate_step_alert,
 )
 from slack_notifier import (
     post_health_report,
@@ -13,7 +12,6 @@ from slack_notifier import (
     post_morning_report,
     post_evening_report,
     post_monthly_report,
-    post_step_alert,
 )
 
 
@@ -140,42 +138,13 @@ def run_evening_report(client):
         run_monthly_report(client)
 
 
-def run_step_alert(client, alert_type: str):
-    """昼・夕の歩数アラートを投稿"""
-    label = "昼" if alert_type == "midday" else "夕方"
-    print(f"🚶 {label}の歩数アラートを生成します")
-    try:
-        steps_data = client.get_steps()
-    except Exception as e:
-        print(f"歩数データ取得失敗: {e}", file=sys.stderr)
-        traceback.print_exc()
-        notify_error(f"歩数データ取得失敗: {e}")
-        sys.exit(1)
-
-    try:
-        message = generate_step_alert(steps_data["steps"], alert_type)
-    except Exception as e:
-        print(f"Claude APIエラー: {e}", file=sys.stderr)
-        traceback.print_exc()
-        notify_error(f"歩数アラートClaude APIエラー: {e}")
-        sys.exit(1)
-
-    try:
-        post_step_alert(message)
-    except Exception as e:
-        print(f"Slack投稿失敗: {e}", file=sys.stderr)
-        traceback.print_exc()
-        notify_error(f"歩数アラートSlack投稿失敗: {e}")
-        sys.exit(1)
-
-
 def main():
     parser = argparse.ArgumentParser(description="Fitbit Daily Health Report")
     parser.add_argument(
         "--mode",
-        choices=["morning", "evening", "midday", "eod"],
+        choices=["morning", "evening"],
         required=True,
-        help="morning: 睡眠データを配信, evening: アクティビティを配信, midday: 昼の歩数アラート, eod: 夕方の歩数アラート",
+        help="morning: 睡眠データを配信, evening: アクティビティを配信",
     )
     args = parser.parse_args()
 
@@ -218,12 +187,8 @@ def main():
 
     if args.mode == "morning":
         run_morning_report(client)
-    elif args.mode == "evening":
-        run_evening_report(client)
-    elif args.mode == "midday":
-        run_step_alert(client, "midday")
     else:
-        run_step_alert(client, "eod")
+        run_evening_report(client)
 
 
 if __name__ == "__main__":
