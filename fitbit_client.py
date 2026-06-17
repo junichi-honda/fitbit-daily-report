@@ -1,5 +1,5 @@
 import requests
-from datetime import date, timedelta
+from datetime import datetime, timedelta, timezone
 from config import (
     FITBIT_AUTH_URL,
     FITBIT_API_BASE_URL,
@@ -33,11 +33,13 @@ class FitbitClient:
     def _headers(self):
         return {"Authorization": f"Bearer {self.access_token}"}
 
+    _JST = timezone(timedelta(hours=9))
+
     def _today(self):
-        return date.today().strftime("%Y-%m-%d")
+        return datetime.now(self._JST).date().strftime("%Y-%m-%d")
 
     def _yesterday(self):
-        return (date.today() - timedelta(days=1)).strftime("%Y-%m-%d")
+        return (datetime.now(self._JST).date() - timedelta(days=1)).strftime("%Y-%m-%d")
 
     def get_sleep(self):
         """当日の睡眠データを取得（朝に実行し、昨夜〜今朝の睡眠を取得）"""
