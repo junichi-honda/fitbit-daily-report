@@ -1,5 +1,6 @@
 import requests
-from datetime import datetime, timedelta, timezone
+import time
+from datetime import date, datetime, timedelta, timezone
 from config import (
     FITBIT_AUTH_URL,
     FITBIT_API_BASE_URL,
@@ -19,13 +20,19 @@ class FitbitClient:
         self.access_token = None
 
     def refresh_access_token(self):
-        res = requests.post(
-            self.AUTH_URL,
-            data={"grant_type": "refresh_token", "refresh_token": self.refresh_token},
-            auth=(self.client_id, self.client_secret),
-            headers={"Content-Type": "application/x-www-form-urlencoded"},
-        )
-        res.raise_for_status()
+        for attempt in range(4):
+            res = requests.post(
+                self.AUTH_URL,
+                data={"grant_type": "refresh_token", "refresh_token": self.refresh_token},
+                auth=(self.client_id, self.client_secret),
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
+            )
+            if res.status_code < 500 or attempt == 3:
+                res.raise_for_status()
+                break
+            wait = 2 ** (attempt + 1)
+            print(f"トークンリフレッシュ {res.status_code} エラー、{wait}秒後にリトライ ({attempt + 1}/3)")
+            time.sleep(wait)
         data = res.json()
         self.access_token = data["access_token"]
         return data["refresh_token"]
