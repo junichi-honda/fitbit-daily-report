@@ -1,9 +1,10 @@
 name: Daily Health Report
 
 on:
-  schedule:
-    - cron: "0 22 * * *"    # UTC 22:00 = JST 07:00（朝の睡眠レポート）
-    - cron: "0 12 * * *"    # UTC 12:00 = JST 21:00（夜のアクティビティレポート）
+  # Slack側のアプリを停止したため一時的に無効化
+  # schedule:
+  #   - cron: "0 22 * * *"    # UTC 22:00 = JST 07:00（朝の睡眠レポート）
+  #   - cron: "0 12 * * *"    # UTC 12:00 = JST 21:00（夜のアクティビティレポート）
   workflow_dispatch:
     inputs:
       mode:
